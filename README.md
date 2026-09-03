@@ -162,6 +162,36 @@ A production-ready platform that helps businesses automatically discover relevan
 
 ## Local Development Setup
 
+## Vercel Deployment
+
+Deploy the Next.js app from the `frontend` directory. Set Vercel's **Root Directory** to `frontend`, use the detected Next.js framework, and keep the default build command (`npm run build`).
+
+The NestJS backend is a separate Node service and is not a Vercel frontend function. Deploy it separately with `backend` as its application directory and `npm run build` as its build command. In the backend deployment, set `DATABASE_URL` to the Neon PostgreSQL connection string and set `CORS_ORIGIN` to the deployed frontend URL.
+
+Required frontend variable:
+
+```env
+NEXT_PUBLIC_API_URL=https://your-backend.example.com
+```
+
+Required backend variables:
+
+```env
+DATABASE_URL=your-neon-connection-string
+JWT_SECRET=your-production-jwt-secret
+CORS_ORIGIN=https://your-frontend.vercel.app
+PORT=3001
+NODE_ENV=production
+REDIS_HOST=your-redis-host
+REDIS_PORT=6379
+REDIS_PASSWORD=your-redis-password
+OPENAI_API_KEY=your-openai-api-key
+RESEND_API_KEY=your-resend-api-key
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+```
+
+`DATABASE_URL` takes precedence over the local `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, and `DATABASE_NAME` settings. Do not commit any values from these variables.
+
 ### Backend Setup
 
 1. **Navigate to backend directory**
