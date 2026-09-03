@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bull';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -28,8 +28,9 @@ export class NotificationsService {
     private readonly tendersRepository: Repository<Tender>,
     @InjectRepository(TenderMatch)
     private readonly matchesRepository: Repository<TenderMatch>,
+    @Optional()
     @InjectQueue('notifications')
-    private readonly notificationsQueue: Queue,
+    private readonly notificationsQueue: Queue | undefined,
     private readonly configService: ConfigService,
   ) {
     const resendKey = this.configService.get<string>('RESEND_API_KEY');
@@ -63,6 +64,7 @@ export class NotificationsService {
   }
 
   async queueHighScoreMatches(threshold = 80): Promise<void> {
+    if (!this.notificationsQueue) return;
     const matches = await this.matchesRepository.find({
       where: { match_score: MoreThan(threshold) },
       relations: ['company', 'company.user'],
@@ -81,6 +83,7 @@ export class NotificationsService {
   }
 
   async queueMatchEmail(userId: string, tenderId: string, matchId: string): Promise<void> {
+    if (!this.notificationsQueue) return;
     await this.notificationsQueue.add('send-email', { userId, tenderId, matchId });
   }
 

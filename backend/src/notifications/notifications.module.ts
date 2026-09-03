@@ -8,13 +8,14 @@ import { NotificationHistory } from './entities/notification-history.entity';
 import { User } from '../auth/entities/user.entity';
 import { Tender } from '../tenders/entities/tender.entity';
 import { TenderMatch } from '../matching/entities/tender-match.entity';
+import { redisEnabled } from '../config/runtime';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Notification, NotificationHistory, User, Tender, TenderMatch]),
-    BullModule.registerQueue({
+    ...(redisEnabled ? [BullModule.registerQueue({
       name: 'notifications',
-    }),
+    })] : []),
   ],
   controllers: [NotificationsController],
   providers: [NotificationsService],

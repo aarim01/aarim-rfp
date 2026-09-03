@@ -9,18 +9,21 @@ import { ScrapingSource } from '../tenders/entities/scraping-source.entity';
 import { Tender } from '../tenders/entities/tender.entity';
 import { MatchingModule } from '../matching/matching.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { redisEnabled } from '../config/runtime';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([ScrapingSource, Tender]),
-    BullModule.registerQueue({
+    ...(redisEnabled ? [BullModule.registerQueue({
       name: 'scraping',
-    }),
+    })] : []),
     MatchingModule,
     NotificationsModule,
   ],
   controllers: [ScrapingController],
-  providers: [ScrapingService, ScrapingJobProcessor, ScheduledScrapingService],
+  providers: redisEnabled
+    ? [ScrapingService, ScrapingJobProcessor, ScheduledScrapingService]
+    : [ScrapingService],
   exports: [ScrapingService],
 })
 export class ScrapingModule {}

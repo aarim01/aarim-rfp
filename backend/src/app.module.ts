@@ -15,6 +15,7 @@ import { AdminModule } from './admin/admin.module';
 import { JobsModule } from './jobs/jobs.module';
 import { CommonModule } from './common/common.module';
 import { ScrapingModule } from './scraping/scraping.module';
+import { isProduction, redisEnabled } from './config/runtime';
 
 @Module({
   imports: [
@@ -27,6 +28,11 @@ import { ScrapingModule } from './scraping/scraping.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         const databaseUrl = configService.get<string>('DATABASE_URL');
+        const production = isProduction || configService.get<string>('NODE_ENV') === 'production';
+
+        if (production && !databaseUrl) {
+          throw new Error('DATABASE_URL must be configured in production');
+        }
 
         return {
           type: 'postgres' as const,
@@ -46,28 +52,38 @@ import { ScrapingModule } from './scraping/scraping.module';
       },
       inject: [ConfigService],
     }),
-    BullModule.forRootAsync({
+    ...(redisEnabled ? [BullModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        redis: {
-          host: configService.get('REDIS_HOST'),
-          port: configService.get('REDIS_PORT'),
-          password: configService.get('REDIS_PASSWORD') || undefined,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDIS_URL');
+        return redisUrl
+          ? { redis: redisUrl }
+          : {
+              redis: {
+                host: configService.get<string>('REDIS_HOST'),
+                port: parseInt(configService.get<string>('REDIS_PORT') || '6379'),
+                password: configService.get<string>('REDIS_PASSWORD') || undefined,
+              },
+            };
+      },
       inject: [ConfigService],
-    }),
-    RedisModule.forRootAsync({
+    })] : []),
+    ...(redisEnabled ? [RedisModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        config: {
-          host: configService.get('REDIS_HOST') || 'localhost',
-          port: parseInt(configService.get('REDIS_PORT') || '6379'),
-          password: configService.get('REDIS_PASSWORD') || undefined,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDIS_URL');
+        return redisUrl
+          ? { config: { url: redisUrl } }
+          : {
+              config: {
+                host: configService.get<string>('REDIS_HOST'),
+                port: parseInt(configService.get<string>('REDIS_PORT') || '6379'),
+                password: configService.get<string>('REDIS_PASSWORD') || undefined,
+              },
+            };
+      },
       inject: [ConfigService],
-    }),
+    })] : []),
     ScheduleModule.forRoot(),
     AuthModule,
     CompanyModule,

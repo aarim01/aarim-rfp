@@ -8,6 +8,11 @@ backend/.env.*
 frontend/.env.local
 frontend/.env.*
 !frontend/.env.example
+*.env
+*.env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # Dependencies and build output
 node_modules/

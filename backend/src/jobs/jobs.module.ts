@@ -6,16 +6,19 @@ import { CronService } from './cron.service';
 import { TendersModule } from '../tenders/tenders.module';
 import { MatchingModule } from '../matching/matching.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { redisEnabled } from '../config/runtime';
 
 @Module({
   imports: [
-    BullModule.registerQueue({ name: 'matching' }),
-    BullModule.registerQueue({ name: 'notifications' }),
+    ...(redisEnabled ? [
+      BullModule.registerQueue({ name: 'matching' }),
+      BullModule.registerQueue({ name: 'notifications' }),
+    ] : []),
     TendersModule,
     MatchingModule,
     NotificationsModule,
   ],
-  providers: [MatchingJob, NotificationJob, CronService],
-  exports: [MatchingJob, NotificationJob, CronService],
+  providers: redisEnabled ? [MatchingJob, NotificationJob, CronService] : [],
+  exports: redisEnabled ? [MatchingJob, NotificationJob, CronService] : [],
 })
 export class JobsModule {}

@@ -5,7 +5,7 @@ import { AppModule } from './app.module';
 import * as express from 'express';
 import * as path from 'path';
 
-async function bootstrap() {
+export async function createApp() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
@@ -26,8 +26,17 @@ async function bootstrap() {
     }),
   );
 
+  return app;
+}
+
+async function bootstrap() {
+  const app = await createApp();
+  const configService = app.get(ConfigService);
   const port = configService.get('PORT') || 3001;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
 }
-bootstrap();
+
+if (require.main === module) {
+  bootstrap();
+}
