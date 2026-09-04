@@ -218,6 +218,27 @@ export class AuthService {
     };
   }
 
+  async demoLogin(): Promise<AuthResponseDto> {
+    if (!this.isDemoMode()) {
+      throw new UnauthorizedException('Demo mode is disabled');
+    }
+
+    const user = this.getDemoUserIdentity();
+    const tokens = this.generateDemoTokens(user);
+
+    return {
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role,
+      },
+    };
+  }
+
   // Refresh Tokens (with Rotation & Reuse Detection)
   async refreshToken(token: string, ip?: string, userAgent?: string): Promise<{ access_token: string; refresh_token: string }> {
     if (this.isDemoMode()) {

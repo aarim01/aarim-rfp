@@ -34,10 +34,10 @@ export default function HomePage() {
             Sign In
           </Link>
           <Link
-            href="/auth/register"
+            href="/dashboard"
             className="btn-primary text-sm py-2 px-5"
           >
-            Get Started
+            Start Free
           </Link>
         </div>
       </nav>
@@ -78,8 +78,8 @@ export default function HomePage() {
         </div>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
-          <Link href="/auth/register" className="btn-primary text-base px-8 py-3.5">
-            Start Free Trial
+          <Link href="/dashboard" className="btn-primary text-base px-8 py-3.5">
+            Start Free Now
           </Link>
           <Link href="/auth/login" className="btn-secondary text-base px-8 py-3.5">
             Sign In to Dashboard

@@ -35,6 +35,12 @@ export class AuthController {
     return this.authService.login(loginDto, ip, userAgent);
   }
 
+  @Post('demo')
+  @HttpCode(HttpStatus.OK)
+  async demoLogin(): Promise<AuthResponseDto> {
+    return this.authService.demoLogin();
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(

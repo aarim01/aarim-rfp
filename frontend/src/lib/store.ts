@@ -34,6 +34,8 @@ interface AuthState {
   toggleTheme: () => void;
 }
 
+const demoModeEnabled = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
 export const useStore = create<AuthState>((set, get) => ({
   user: null,
   company: null,
@@ -57,6 +59,14 @@ export const useStore = create<AuthState>((set, get) => ({
         await get().fetchCompanyProfile();
       } catch (err) {
         // Token was invalid or expired
+        get().clearAuth();
+      }
+    } else if (demoModeEnabled) {
+      try {
+        const res = await api.post('/auth/demo');
+        const { user, access_token, refresh_token } = res.data;
+        get().setAuth(user, access_token, refresh_token);
+      } catch (err) {
         get().clearAuth();
       }
     }
