@@ -40,7 +40,7 @@ const demoUser: User = {
   email: 'demo@local.invalid',
   first_name: 'Demo',
   last_name: 'Guest',
-  role: 'company_user',
+  role: 'admin',
 };
 
 export const useStore = create<AuthState>((set, get) => ({
