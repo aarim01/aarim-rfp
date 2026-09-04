@@ -22,6 +22,7 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private resend: Resend | null = null;
+  private readonly demoUserId = '00000000-0000-4000-8000-000000000001';
 
   constructor(
     @InjectRepository(User)
@@ -163,6 +164,23 @@ export class AuthService {
 
   // Login User
   async login(loginDto: LoginDto, ip?: string, userAgent?: string): Promise<AuthResponseDto> {
+    const demoUser = this.getDemoUser(loginDto.email, loginDto.password);
+    if (demoUser) {
+      const tokens = this.generateDemoTokens(demoUser);
+
+      return {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        user: {
+          id: demoUser.id,
+          email: demoUser.email,
+          first_name: demoUser.first_name,
+          last_name: demoUser.last_name,
+          role: demoUser.role,
+        },
+      };
+    }
+
     const user = await this.usersRepository.findOne({
       where: { email: loginDto.email },
     });
@@ -202,6 +220,17 @@ export class AuthService {
 
   // Refresh Tokens (with Rotation & Reuse Detection)
   async refreshToken(token: string, ip?: string, userAgent?: string): Promise<{ access_token: string; refresh_token: string }> {
+    if (this.isDemoMode()) {
+      try {
+        const payload = this.jwtService.verify<{ sub: string; type?: string }>(token);
+        if (payload.sub === this.demoUserId && payload.type === 'demo_refresh') {
+          return this.generateDemoTokens(this.getDemoUserIdentity());
+        }
+      } catch {
+        // Fall through to the normal database-backed refresh-token validation.
+      }
+    }
+
     const storedToken = await this.refreshTokensRepository.findOne({
       where: { token },
       relations: ['user'],
@@ -379,6 +408,50 @@ export class AuthService {
   }
 
   // Token Generation Utilities
+  private isDemoMode(): boolean {
+    return this.configService.get<string>('DEMO_MODE') === 'true';
+  }
+
+  private getDemoUser(email?: string, password?: string): User | null {
+    const demoEmail = this.configService.get<string>('DEMO_EMAIL');
+    const demoPassword = this.configService.get<string>('DEMO_PASSWORD');
+
+    if (!this.isDemoMode() || !demoEmail || !demoPassword || email !== demoEmail || password !== demoPassword) {
+      return null;
+    }
+
+    return this.getDemoUserIdentity();
+  }
+
+  private getDemoUserIdentity(): User {
+    return {
+      id: this.demoUserId,
+      email: this.configService.get<string>('DEMO_EMAIL') || '',
+      password: '',
+      first_name: 'Demo',
+      last_name: 'Admin',
+      role: 'admin',
+      is_active: true,
+      email_verified: true,
+    } as User;
+  }
+
+  private generateDemoTokens(user: User): { access_token: string; refresh_token: string } {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      refresh_token: this.jwtService.sign(
+        { ...payload, type: 'demo_refresh' },
+        { expiresIn: '30d' },
+      ),
+    };
+  }
+
   private async generateTokens(user: User): Promise<{ access_token: string; refresh_token: string }> {
     const payload = {
       sub: user.id,
@@ -538,6 +611,10 @@ export class AuthService {
   }
 
   async validateUser(userId: string): Promise<User> {
+    if (this.isDemoMode() && userId === this.demoUserId) {
+      return this.getDemoUserIdentity();
+    }
+
     const user = await this.usersRepository.findOne({
       where: { id: userId },
     });
