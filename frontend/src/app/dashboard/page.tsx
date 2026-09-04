@@ -355,10 +355,10 @@ export default function DashboardPage() {
   // ── Auth guard ────────────────────────────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem('access_token')
-    if (!token) {
+    if (!token && !isAuthenticated) {
       router.push('/auth/login')
     }
-  }, [router])
+  }, [isAuthenticated, router])
 
   // ── Data fetch ────────────────────────────────────────────────────────────
   const fetchData = useCallback(async (filterOverride?: typeof filters) => {

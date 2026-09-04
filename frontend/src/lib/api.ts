@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const demoModeEnabled = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false';
+
 const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
@@ -28,6 +30,7 @@ api.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
+      !demoModeEnabled &&
       !originalRequest.url?.includes('/auth/login') &&
       !originalRequest.url?.includes('/auth/refresh')
     ) {
